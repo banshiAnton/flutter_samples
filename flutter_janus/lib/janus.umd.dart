@@ -22,6 +22,8 @@ class Janus {
   int currentUserId;
   int currentHandlerId;
 
+  Function onRemoteStream;
+
   Map<String, Function> transactions = new Map();
   final Map<String, dynamic> configurationPC = {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]};
 
@@ -71,13 +73,23 @@ class Janus {
     print(' $TAG[message] $message');
     dynamic jsomDecodedMessage = json.decode(message);
     String transaction = jsomDecodedMessage['transaction'];
+    if (jsomDecodedMessage['janus'] == 'ack') {
+      return;
+    }
     if (transactions.containsKey(transaction)) {
-      if (jsomDecodedMessage['janus'] == 'ack') {
-        return;
-      }
       transactions[transaction](jsomDecodedMessage);
       transactions.remove(transaction);
       return;
+    } else if (jsomDecodedMessage['janus'] == 'event' || jsomDecodedMessage['janus'] == 'success') {
+      if (jsomDecodedMessage['plugindata']['data'] != null) {
+        var eventName = jsomDecodedMessage['plugindata']['data']['videoroom'];
+        if (eventName == 'event') {
+          var participants = jsomDecodedMessage['plugindata']['data']['publishers'] as List;
+          participants?.forEach((dynamic publisher) {
+            attachRemoteUser(publisher['id']);
+          });
+        }
+      }
     }
   }
 
@@ -135,6 +147,22 @@ class Janus {
     Map<String, dynamic> publish = {"request": "configure", "audio": true, "video": true};
     var jsep = {'type': offer.type, 'sdp': offer.sdp};
     var request = { "janus": "message", "body": publish, 'jsep': jsep, "handle_id": currentHandlerId };
+    return _createWSEvent(request);
+  }
+
+  attachRemoteUser(int publishedId) async {
+    if (handlers.containsKey(publishedId)) {
+      return;
+    }
+    HandleJanusWebRTC participantHandler = await attach(plugin: "janus.plugin.videoroom", isLocal: false);
+    participantHandler.onRemoteStreamState = this.onRemoteStream;
+    var janusMessageListener = await joinListen(userId: publishedId, handlerId: participantHandler.id);
+    participantHandler.setUpRemotePeer(configurationPC, janusMessageListener['jsep'], currentDialogId);
+  }
+
+  Future<dynamic> listOnlineParticipants() {
+    Map<String, dynamic> requestBody = {"request": "listparticipants", "room": currentDialogId};
+    var request = { "janus": "message", "body": requestBody, "handle_id": currentHandlerId };
     return _createWSEvent(request);
   }
 }

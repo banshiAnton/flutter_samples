@@ -109,7 +109,7 @@ class HandleJanusWebRTC {
       'type': answer.type,
       'sdp': answer.sdp,
     };
-    Map<String, dynamic> body = {"request": "start", "room": dialogId, "audio": true,"video": true};
+    Map<String, dynamic> body = {"request": "start", "room": dialogId};
     var request = { "janus": "message", "body": body, 'jsep': jsep, "handle_id": id };
     return sendEvent(request);
   }

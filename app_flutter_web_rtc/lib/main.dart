@@ -87,10 +87,13 @@ class CallRoomState extends State<MyHomePage> {
   }
 
   onRemoteStream(MediaStream remoteStream) {
-    print('$TAG[onRemoteStream] ' + remoteStream.toString());
+    print('$TAG[onRemoteStream] ${remoteStream.getAudioTracks().length}');
+    remoteStream.getAudioTracks()[0].enabled = true;
+    remoteStream.getAudioTracks()[0]..enableSpeakerphone(true)..setVolume(100);
     setState(() {
       this.remoteStream = remoteStream;
       remoteStreamRender.srcObject = this.remoteStream;
+      remoteStreamRender.objectFit = RTCVideoViewObjectFit.RTCVideoViewObjectFitCover;
     });
   }
 
@@ -184,6 +187,7 @@ class CallRoomState extends State<MyHomePage> {
       localStream = stream;
       localStreamRender.srcObject = localStream;
       localStreamRender.mirror = true;
+      localStreamRender.objectFit = RTCVideoViewObjectFit.RTCVideoViewObjectFitCover;
       return localStream;
     } catch (e) {
       print(e.toString());

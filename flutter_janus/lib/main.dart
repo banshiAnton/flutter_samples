@@ -1,5 +1,5 @@
 import 'dart:math';
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_janus/HandleJanusWebRTC.dart';
 import 'package:flutter_janus/janus.config.dart';
@@ -39,80 +39,72 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     var rn = new Random();
     currentUserID = rn.nextInt(10000);
-    remoteRender.initialize();
-    localRender.initialize();
     super.initState();
   }
 
-  MediaStream remoteStream;
-  final remoteRender = new RTCVideoRenderer();
-  MediaStream localStream;
-  final localRender = new RTCVideoRenderer();
+  List<RTCVideoRenderer> streams = [];
 
-  void onRemoteStream(MediaStream remoteStream) {
-    this.remoteStream = remoteStream;
-    remoteRender.srcObject = this.remoteStream;
-    remoteRender.objectFit = RTCVideoViewObjectFit.RTCVideoViewObjectFitCover;
-    remoteRender.mirror = true;
-  }
-
-  void onLocalStream(MediaStream localStream) {
-    this.localStream = localStream;
-    localRender.srcObject = this.localStream;
-    localRender.objectFit = RTCVideoViewObjectFit.RTCVideoViewObjectFitCover;
-    localRender.mirror = true;
+  void onStream(MediaStream stream) async {
+    RTCVideoRenderer streamRender = new RTCVideoRenderer();
+    await streamRender.initialize();
+    streamRender.srcObject = stream;
+    streamRender.objectFit = RTCVideoViewObjectFit.RTCVideoViewObjectFitCover;
+    streamRender.mirror = true;
+    setState(() {
+      streams.add(streamRender);
+    });
   }
 
   Future<void> makeCall() async {
     Janus janusClient = new Janus(janusConfig['server'], janusConfig['quality']);
+    janusClient.onRemoteStream = this.onStream;
     await janusClient.connect();
     int sessionId = await janusClient.createSession();
     janusClient.keepAlive();
     print('[makeCall] $sessionId');
     HandleJanusWebRTC handler = await janusClient.attach(plugin: "janus.plugin.videoroom", isLocal: true);
-    var janusMessage = await janusClient.joinSelf(groupId: '1337', userId: currentUserID);
 
     MediaStream localStream = await handler.getUsersMedia();
-    onLocalStream(localStream);
+    onStream(localStream);
 
     await handler.initPeer(janusClient.configurationPC);
     RTCSessionDescription offer = await handler.createOffer(localStream);
+
+    var janusMessage = await janusClient.joinSelf(groupId: '1337', userId: currentUserID);
+
     Map<String, dynamic> jsepMessage = await janusClient.sendOfferSdp(offer);
     await handler.setRemoteSdp(jsepMessage['jsep']['type'], jsepMessage['jsep']['sdp']);
 
     var participants = janusMessage['plugindata']['data']['publishers'] as List;
 
-    if (participants.length <= 0) {
-      return;
-    }
+    participants.forEach((dynamic publisher) {
+      janusClient.attachRemoteUser(publisher['id']);
+    });
 
-    HandleJanusWebRTC participantHandler = await janusClient.attach(plugin: "janus.plugin.videoroom", isLocal: false);
-
-    participantHandler.onRemoteStreamState = this.onRemoteStream;
-
-    var janusMessageListener = await janusClient.joinListen(userId: participants[0]['id'], handlerId: participantHandler.id);
-    participantHandler.setUpRemotePeer(janusClient.configurationPC, janusMessageListener['jsep'], janusClient.currentDialogId);
+//    Timer.periodic(new Duration(seconds: 5), (timer) {
+//      janusClient.listOnlineParticipants().then((dynamic message) {
+//        var participants = message['plugindata']['data']['participants'] as List;
+//        participants?.forEach((dynamic publisher) {
+//          janusClient.attachRemoteUser(publisher['id']);
+//        });
+//      });
+//    });
   }
 
   @override
   Widget build(BuildContext context) {
-    var widgets = <Widget>[
-      new Expanded(
-        child: new RTCVideoView(localRender),
-      ),
-      new Expanded(
-        child: new RTCVideoView(remoteRender),
-      )
-    ];
+    var streamsWidgets =  streams.map((var streamRender) => new Expanded(
+      child: new RTCVideoView(streamRender),
+    )).toList();
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text("UserID = $currentUserID"),
       ),
       body: Center(
         child: new Container(
           child: new Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: widgets),
+              children: streamsWidgets),
         ),
       ),
       floatingActionButton: FloatingActionButton(
