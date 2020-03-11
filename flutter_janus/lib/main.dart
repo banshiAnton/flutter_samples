@@ -65,6 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
     HandleJanusWebRTC handler = await janusClient.attach(plugin: "janus.plugin.videoroom", isLocal: true);
 
     MediaStream localStream = await handler.getUsersMedia();
+    localStream.getAudioTracks()[0].enableSpeakerphone(false);
     onStream(localStream);
 
     await handler.initPeer(janusClient.configurationPC);
@@ -81,21 +82,32 @@ class _MyHomePageState extends State<MyHomePage> {
       janusClient.attachRemoteUser(publisher['id']);
     });
 
-//    Timer.periodic(new Duration(seconds: 5), (timer) {
-//      janusClient.listOnlineParticipants().then((dynamic message) {
-//        var participants = message['plugindata']['data']['participants'] as List;
-//        participants?.forEach((dynamic publisher) {
-//          janusClient.attachRemoteUser(publisher['id']);
-//        });
-//      });
-//    });
+  }
+
+  List<Widget> renderStreamsGrid() {
+    List<Widget> streamsExpanded = streams.map((var streamRender) => new Expanded(
+      child: new RTCVideoView(streamRender),
+    )).toList();
+    if (streams.length > 2) {
+      List<Widget> rows = [];
+      for (var i = 0; i < streamsExpanded.length; i += 2) {
+        var chunkEndIndex =  i + 2;
+        if (streamsExpanded.length < chunkEndIndex) {
+          chunkEndIndex = streamsExpanded.length;
+        }
+        var chunk = streamsExpanded.sublist(i, chunkEndIndex);
+        rows.add(new Expanded(child: new Row(
+            children: chunk
+        )));
+      }
+      return rows;
+    }
+    return streamsExpanded;
   }
 
   @override
   Widget build(BuildContext context) {
-    var streamsWidgets =  streams.map((var streamRender) => new Expanded(
-      child: new RTCVideoView(streamRender),
-    )).toList();
+    var streamsWidgets = renderStreamsGrid();
     return Scaffold(
       appBar: AppBar(
         title: Text("UserID = $currentUserID"),
