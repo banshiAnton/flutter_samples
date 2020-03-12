@@ -87,9 +87,6 @@ class CallRoomState extends State<MyHomePage> {
   }
 
   onRemoteStream(MediaStream remoteStream) {
-    print('$TAG[onRemoteStream] ${remoteStream.getAudioTracks().length}');
-    remoteStream.getAudioTracks()[0].enabled = true;
-    remoteStream.getAudioTracks()[0]..enableSpeakerphone(true)..setVolume(100);
     setState(() {
       this.remoteStream = remoteStream;
       remoteStreamRender.srcObject = this.remoteStream;
