@@ -47,13 +47,16 @@ class UserPeer {
     send(candidateMessage);
   }
 
-  Future<void> initCall() async {
+  Future<void> initCall(List<int> otherUserIds) async {
     await setUpPeer();
     RTCSessionDescription offer = await createOffer();
     Map<String, dynamic> offerMessage = {
       ...offer.toMap(),
       'type': MESSAGE_TYPES.OFFER
     };
+    if (otherUserIds.length > 0) {
+      offerMessage['otherUserIds'] = otherUserIds;
+    }
     send(offerMessage);
   }
 

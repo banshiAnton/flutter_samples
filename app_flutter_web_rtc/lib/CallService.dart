@@ -21,7 +21,7 @@ class CallService {
 
   void connectToWS() {
     print('$TAG[connectWS][start]');
-    wsConnection = IOWebSocketChannel.connect("ws://$API/$clientID");
+    wsConnection = IOWebSocketChannel.connect("ws://$API_PROD/$clientID");
     wsConnection.stream.listen(onMessage);
     print('$TAG[connectWS][connected]');
   }
@@ -44,7 +44,7 @@ class CallService {
         onAnswer(fromUser, parsedMessageData['sdp']);
         break;
       case MESSAGE_TYPES.OFFER:
-        onIncomingCall(fromUser, parsedMessageData['sdp']);
+        onIncomingCall(fromUser, parsedMessageData);
         break;
       case MESSAGE_TYPES.CANDIDATE:
         onIceCandidate(fromUser, parsedMessageData);
@@ -54,14 +54,25 @@ class CallService {
     }
   }
 
-  Future<void> onIncomingCall(int userId, String sdp) async {
+  Future<void> onIncomingCall(int userId, Map<String, dynamic> inComingCallMessage) async {
     if(peers.containsKey(userId)) {
       return Future.value();
     }
+    String sdp = inComingCallMessage['sdp'];
     UserPeer peer = new UserPeer(userId, sendMessage, onStream);
     await peer.setUpPeer();
     peers[userId] = peer;
     peer.incomingCall(sdp);
+    if (!inComingCallMessage.containsKey('otherUserIds')) {
+      return;
+    }
+    List<int> otherUserIds = inComingCallMessage['otherUserIds'].cast<int>() as List<int>;
+    callToOtherUsersOnGroupCall(otherUserIds);
+  }
+
+  Future<void> callToOtherUsersOnGroupCall(List<int> otherUserIds) async {
+    otherUserIds = otherUserIds.where((int userId) => clientID > userId).toList();
+    otherUserIds.forEach((int userId) => makeCallToUser(userId, []));
   }
 
   Future<void> onAnswer(int userId, String sdp) {
@@ -80,19 +91,23 @@ class CallService {
     peer.onReceiveRawCandidate(iceCandidate);
   }
 
-  Future<void> makeCallToUser(int userId) async {
+  Future<void> makeCallToUser(int userId, List<int> otherGroupUsers) async {
     UserPeer peer = new UserPeer(userId, sendMessage, onStream);
     peers[userId] = peer;
-    return peer.initCall();
+    return peer.initCall(otherGroupUsers);
   }
 
   Future<void> makeCallToCallOnlineUser() async {
     List<int> userIds = await listOfOnlineParticipants();
-    userIds.forEach((int userId) => makeCallToUser(userId));
+    userIds.forEach((int userId) {
+      List<int> otherUserIds = [...userIds];
+      otherUserIds.remove(userId);
+      makeCallToUser(userId, otherUserIds);
+    });
   }
 
   Future<List<int>> listOfOnlineParticipants() async {
-    String url = 'http://$API/listOfOnlineParticipants';
+    String url = 'http://$API_PROD/listOfOnlineParticipants';
     http.Response response = await http.get(url);
     String body = response.body;
     Map<String, dynamic> parsedResponse = json.decode(body);
