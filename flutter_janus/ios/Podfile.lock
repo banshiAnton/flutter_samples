@@ -2,10 +2,10 @@ PODS:
   - Flutter (1.0.0)
   - flutter_webrtc (0.2.2):
     - Flutter
-    - GoogleWebRTC (= 1.1.27299)
-    - libyuv-iOS
-  - GoogleWebRTC (1.1.27299)
-  - libyuv-iOS (1.0.2)
+    - GoogleWebRTC (= 1.1.29400)
+    - Libyuv (= 1703)
+  - GoogleWebRTC (1.1.29400)
+  - Libyuv (1703)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -14,7 +14,7 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - GoogleWebRTC
-    - libyuv-iOS
+    - Libyuv
 
 EXTERNAL SOURCES:
   Flutter:
@@ -24,9 +24,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  flutter_webrtc: f62e93ff3099e08a54040af9a61e590d062b5d4f
-  GoogleWebRTC: 893a5f2f3635437ec3b05ef240993d5713307804
-  libyuv-iOS: 5a154ccc84ec754029886ecb607512731fe30640
+  flutter_webrtc: 626ca239bcc4390a514a2ac2b21b16d0c58b33fe
+  GoogleWebRTC: cfb83bc346435a17fe06bb05f04ad826b858a7fb
+  Libyuv: 5f79ced0ee66e60a612ca97de1e6ccacd187a437
 
 PODFILE CHECKSUM: d912e038637682b1a78193e73007a4190f17ea9c
 
