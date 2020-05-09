@@ -5,7 +5,6 @@ import 'package:flutter_janus/HandleJanusWebRTC.dart';
 import 'package:flutter_janus/janus.config.dart';
 import 'package:flutter_janus/janus.umd.dart';
 import 'package:flutter_webrtc/webrtc.dart';
-import 'package:eventify/eventify.dart';
 
 void main() => runApp(MyApp());
 
@@ -34,6 +33,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
 
   int currentUserID;
+  int groupID = 1337;
 
   @override
   void initState() {
@@ -71,7 +71,8 @@ class _MyHomePageState extends State<MyHomePage> {
     await handler.initPeer(janusClient.configurationPC);
     RTCSessionDescription offer = await handler.createOffer(localStream);
 
-    var janusMessage = await janusClient.joinSelf(groupId: '1337', userId: currentUserID);
+    var janusMessageCreateRoom = await janusClient.createVideoRoom(groupID);
+    var janusMessage = await janusClient.joinSelf(groupId: this.groupID, userId: currentUserID);
 
     Map<String, dynamic> jsepMessage = await janusClient.sendOfferSdp(offer);
     await handler.setRemoteSdp(jsepMessage['jsep']['type'], jsepMessage['jsep']['sdp']);

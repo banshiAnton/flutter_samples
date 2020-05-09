@@ -5,6 +5,7 @@ import 'package:flutter_janus/HandleJanusWebRTC.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_webrtc/webrtc.dart';
+import 'package:flutter_janus/janus.config.dart';
 
 class Janus {
 
@@ -18,7 +19,7 @@ class Janus {
   List<int> handlersId = [];
   Map<int, HandleJanusWebRTC> handlers = {};
 
-  String currentDialogId;
+  int currentDialogId;
   int currentUserId;
   int currentHandlerId;
 
@@ -26,20 +27,8 @@ class Janus {
 
   Map<String, Function> transactions = new Map();
   final Map<String, dynamic> configurationPC = {
-    "iceServers":  [
-      {"url": "stun:stun.l.google.com:19302"},
-      {"url": 'stun:turn.connectycube.com'},
-      {
-        "url": 'turn:turn.connectycube.com:5349?transport=udp',
-        "username": 'connectycube',
-        "credential": '4c29501ca9207b7fb9c4b4b6b04faeb1'
-      },
-      {
-        "url": 'turn:turn.connectycube.com:5349?transport=tcp',
-        "username": 'connectycube',
-        "credential": '4c29501ca9207b7fb9c4b4b6b04faeb1'
-      }
-  ]};
+    "iceServers":  janusConfig['iceServers']
+  };
 
   Janus(this.serverUrl, this.videoQuality);
 
@@ -137,7 +126,7 @@ class Janus {
     });
   }
 
-  Future<dynamic> joinSelf({@required String groupId, @required int userId}) {
+  Future<dynamic> joinSelf({@required int groupId, @required int userId}) {
     var joinEvent = { "request": "join", "room": groupId,
       "ptype": "publisher", "id": userId};
     var request = { "janus": "message", "body": joinEvent, "handle_id": currentHandlerId };
@@ -153,6 +142,13 @@ class Janus {
     var joinEvent = { "request": "join", "room": currentDialogId,
       "ptype": "listener", "feed": userId};
     var request = { "janus": "message", "body": joinEvent, "handle_id": handlerId };
+    var response = _createWSEvent(request);
+    return response;
+  }
+
+  Future<dynamic> createVideoRoom(int groupId) {
+    var joinEvent = { "request": "create", "room": groupId };
+    var request = { "janus": "message", "body": joinEvent, "handle_id": currentHandlerId };
     var response = _createWSEvent(request);
     return response;
   }

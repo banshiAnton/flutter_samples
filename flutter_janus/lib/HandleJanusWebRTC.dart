@@ -98,13 +98,13 @@ class HandleJanusWebRTC {
     return offer;
   }
 
-  Future<dynamic> setUpRemotePeer(Map<String, dynamic> configurationPc, var offerJsep, String dialogId) async {
+  Future<dynamic> setUpRemotePeer(Map<String, dynamic> configurationPc, var offerJsep, int dialogId) async {
     await initPeer(configurationPc);
     RTCSessionDescription answer = await createRowAnswer(offerJsep['type'], offerJsep['sdp']);
     return sendAnswerSdp(answer, dialogId);
   }
 
-  sendAnswerSdp(RTCSessionDescription answer, String dialogId) {
+  sendAnswerSdp(RTCSessionDescription answer, int dialogId) {
     Map<String, String> jsep = {
       'type': answer.type,
       'sdp': answer.sdp,
