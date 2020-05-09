@@ -71,7 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
     await handler.initPeer(janusClient.configurationPC);
     RTCSessionDescription offer = await handler.createOffer(localStream);
 
-    var janusMessageCreateRoom = await janusClient.createVideoRoom(groupID);
+    await janusClient.createVideoRoom(groupID);
     var janusMessage = await janusClient.joinSelf(groupId: this.groupID, userId: currentUserID);
 
     Map<String, dynamic> jsepMessage = await janusClient.sendOfferSdp(offer);
